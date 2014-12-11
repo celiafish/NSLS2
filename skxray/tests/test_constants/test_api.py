@@ -1,7 +1,9 @@
-#! encoding: utf-8
 # ######################################################################
 # Copyright (c) 2014, Brookhaven Science Associates, Brookhaven        #
 # National Laboratory. All rights reserved.                            #
+#                                                                      #
+# @author: Li Li (lili@bnl.gov)                                        #
+# created on 08/19/2014                                                #
 #                                                                      #
 # Redistribution and use in source and binary forms, with or without   #
 # modification, are permitted provided that the following conditions   #
@@ -33,61 +35,11 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE   #
 # POSSIBILITY OF SUCH DAMAGE.                                          #
 ########################################################################
-"""
-This module creates a namespace for X-Ray Diffraction
-"""
 
-import logging
-logger = logging.getLogger(__name__)
 
-# import fitting models
-from ..fitting.api import (
-    ConstantModel, LinearModel, QuadraticModel, ParabolicModel,
-    PolynomialModel, VoigtModel, PseudoVoigtModel, Pearson7Model,
-    StudentsTModel, BreitWignerModel, GaussianModel, LorentzianModel,
-    LognormalModel, DampedOscillatorModel, ExponentialGaussianModel,
-    SkewedGaussianModel, DonaichModel, PowerLawModel, ExponentialModel,
-    StepModel, RectangleModel, Lorentzian2Model, ComptonModel, ElasticModel
-)
+# import * is only allowed at the module level
+from skxray.constants.api import *
 
-from ..recip import process_to_q, hkl_to_q
-
-from ..constants.api import (
-    BasicElement, calibration_standards
-)
-
-from ..core import (
-    bin_1D, bin_edges, bin_edges_to_centers, grid3d,
-    q_to_d, d_to_q,
-    q_to_twotheta, twotheta_to_q,
-    pixel_to_phi, pixel_to_radius,
-)
-
-from ..calibration import (
-    refine_center, estimate_d_blind,
-)
-
-__all__ = [
-    # fitting api
-    'ConstantModel', 'LinearModel', 'QuadraticModel', 'ParabolicModel',
-    'PolynomialModel', 'VoigtModel', 'PseudoVoigtModel', 'Pearson7Model',
-    'StudentsTModel', 'BreitWignerModel', 'GaussianModel', 'LorentzianModel',
-    'LognormalModel', 'DampedOscillatorModel', 'ExponentialGaussianModel',
-    'SkewedGaussianModel', 'DonaichModel', 'PowerLawModel', 'ExponentialModel',
-    'StepModel', 'RectangleModel', 'Lorentzian2Model', 'ComptonModel',
-    'ElasticModel',
-
-    # recip
-    'process_to_q', 'hkl_to_q',
-
-    # constants api
-    'BasicElement', 'calibration_standards',
-
-    # core
-    'bin_1D', 'bin_edges', 'bin_edges_to_centers', 'grid3d', 'q_to_d',
-    'd_to_q', 'q_to_twotheta', 'twotheta_to_q', 'pixel_to_phi',
-    'pixel_to_radius',
-
-    # calibration
-    'refine_center', 'estimate_d_blind',
-]
+if __name__ == '__main__':
+    import nose
+    nose.runmodule(argv=['-s', '--with-doctest'], exit=False)

@@ -1,7 +1,9 @@
-#! encoding: utf-8
 # ######################################################################
 # Copyright (c) 2014, Brookhaven Science Associates, Brookhaven        #
 # National Laboratory. All rights reserved.                            #
+#                                                                      #
+# @author: Li Li (lili@bnl.gov)                                        #
+# created on 08/19/2014                                                #
 #                                                                      #
 # Redistribution and use in source and binary forms, with or without   #
 # modification, are permitted provided that the following conditions   #
@@ -33,61 +35,46 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE   #
 # POSSIBILITY OF SUCH DAMAGE.                                          #
 ########################################################################
-"""
-This module creates a namespace for X-Ray Diffraction
-"""
 
-import logging
-logger = logging.getLogger(__name__)
 
-# import fitting models
-from ..fitting.api import (
-    ConstantModel, LinearModel, QuadraticModel, ParabolicModel,
-    PolynomialModel, VoigtModel, PseudoVoigtModel, Pearson7Model,
-    StudentsTModel, BreitWignerModel, GaussianModel, LorentzianModel,
-    LognormalModel, DampedOscillatorModel, ExponentialGaussianModel,
-    SkewedGaussianModel, DonaichModel, PowerLawModel, ExponentialModel,
-    StepModel, RectangleModel, Lorentzian2Model, ComptonModel, ElasticModel
-)
+from __future__ import (absolute_import, division,
+                        unicode_literals, print_function)
+import six
+import numpy as np
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_raises)
+from nose.tools import assert_equal, assert_not_equal
 
-from ..recip import process_to_q, hkl_to_q
+from skxray.constants.xrs import (PowderStandard, Reflection, HKL,
+                                  calibration_standards)
 
-from ..constants.api import (
-    BasicElement, calibration_standards
-)
+from skxray.core import q_to_d, d_to_q, NotInstalledError
 
-from ..core import (
-    bin_1D, bin_edges, bin_edges_to_centers, grid3d,
-    q_to_d, d_to_q,
-    q_to_twotheta, twotheta_to_q,
-    pixel_to_phi, pixel_to_radius,
-)
 
-from ..calibration import (
-    refine_center, estimate_d_blind,
-)
+def smoke_test_powder_standard():
+    name = 'Si'
+    cal = calibration_standards[name]
+    assert(name == cal.name)
 
-__all__ = [
-    # fitting api
-    'ConstantModel', 'LinearModel', 'QuadraticModel', 'ParabolicModel',
-    'PolynomialModel', 'VoigtModel', 'PseudoVoigtModel', 'Pearson7Model',
-    'StudentsTModel', 'BreitWignerModel', 'GaussianModel', 'LorentzianModel',
-    'LognormalModel', 'DampedOscillatorModel', 'ExponentialGaussianModel',
-    'SkewedGaussianModel', 'DonaichModel', 'PowerLawModel', 'ExponentialModel',
-    'StepModel', 'RectangleModel', 'Lorentzian2Model', 'ComptonModel',
-    'ElasticModel',
+    for d, hkl, q in cal:
+        assert_array_almost_equal(d_to_q(d), q)
+        assert_array_almost_equal(q_to_d(q), d)
+        assert_array_equal(np.linalg.norm(hkl), hkl.length)
 
-    # recip
-    'process_to_q', 'hkl_to_q',
+    assert_equal(str(cal), "Calibration standard: Si")
+    assert_equal(len(cal), 11)
 
-    # constants api
-    'BasicElement', 'calibration_standards',
 
-    # core
-    'bin_1D', 'bin_edges', 'bin_edges_to_centers', 'grid3d', 'q_to_d',
-    'd_to_q', 'q_to_twotheta', 'twotheta_to_q', 'pixel_to_phi',
-    'pixel_to_radius',
+def test_hkl():
+    a = HKL(1, 1, 1)
+    b = HKL('1', '1', '1')
+    c = HKL(h='1', k='1', l='1')
+    d = HKL(1.5, 1.5, 1.75)
+    assert_equal(a, b)
+    assert_equal(a, c)
+    assert_equal(a, d)
 
-    # calibration
-    'refine_center', 'estimate_d_blind',
-]
+
+if __name__ == '__main__':
+    import nose
+    nose.runmodule(argv=['-s', '--with-doctest'], exit=False)
