@@ -1,9 +1,9 @@
 ====================
- :mod:`image` Module
+ :mod:`dpc` Module
 ====================
 
 
-.. automodule:: skxray.image
+.. automodule:: nsls2.dpc
    :members:
    :show-inheritance:
    :undoc-members:
