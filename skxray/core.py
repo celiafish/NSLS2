@@ -47,7 +47,7 @@ from six import string_types
 
 import time
 import sys
-from itertools import tee
+
 from collections import namedtuple, MutableMapping, defaultdict, deque
 import numpy as np
 from itertools import tee
@@ -1171,64 +1171,11 @@ def multi_tau_lags(multitau_levels, multitau_channels):
     tot_channels = (multitau_levels + 1)*multitau_channels//2
 
     lag = []
-    lag_steps = np.arange(1, multitau_channels + 1)
+    lag_steps = np.arange(0, multitau_channels)
     for i in range(2, multitau_levels + 1):
-        for j in range(1, multitau_channels//2 + 1):
+        for j in range(0, multitau_channels//2):
             lag.append((multitau_channels//2 + j)*(2**(i - 1)))
 
     lag_steps = np.append(lag_steps, np.array(lag))
 
     return tot_channels, lag_steps
-
-
-def roi_rectangles(num_rois, roi_data, detector_size):
-    """
-     Parameters
-    ----------
-    num_rois: int
-        number of region of interests(roi)
-
-    roi_data: ndarray
-        upper left co-ordinates of roi's and the, length and width of roi's
-        from those co-ordinates
-        shape is [num_rois][4]
-
-    detector_size : tuple
-        2 element tuple defining the number of pixels in the detector.
-        Order is (num_rows, num_columns)
-
-    Returns
-    -------
-    q_inds : ndarray
-        indices of the Q values for the required shape
-        shape [detector_size[0]*detector_size[1]][1]
-
-    num_pixels : ndarray
-        number of pixels in certain rectangle shape
-    """
-
-    mesh = np.zeros(detector_size, dtype=np.int64)
-
-    num_pixels = []
-    # for i in range(0, num_rois):
-    for i, (col_coor, row_coor, col_val, row_val) in enumerate(roi_data, 0):
-
-        left, right = np.max([col_coor, 0]), np.min([col_coor + col_val,
-                                                     detector_size[0]])
-        top, bottom = np.max([row_coor, 0]), np.min([row_coor + row_val,
-                                                     detector_size[1]])
-
-        area = (right - left) * (bottom - top)
-
-        # find the number of pixels in each roi
-        num_pixels.append(area)
-
-        slc1 = slice(left, right)
-        slc2 = slice(top, bottom)
-
-        # assign a different scalar for each roi
-        mesh[slc1, slc2] = (i + 1)
-
-    q_inds = np.ravel(mesh)
-
-    return q_inds, num_pixels
