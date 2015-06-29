@@ -50,6 +50,7 @@ import sys
 
 from collections import namedtuple, MutableMapping, defaultdict, deque
 import numpy as np
+import scipy.stats
 from itertools import tee
 
 import logging
@@ -82,6 +83,7 @@ class NotInstalledError(ImportError):
 
     '''
     pass
+
 
 class MD_dict(MutableMapping):
     """
@@ -568,11 +570,11 @@ def bin_1D(x, y, nx=None, min_x=None, max_x=None):
     y : array
         intensity
     nx : integer, optional
-        number of bins to use
+        number of bins to use defaults to default bin value
     min_x : float, optional
-        Left edge of first bin
+        Left edge of first bin defaults to minimum value of x
     max_x : float, optional
-        Right edge of last bin
+        Right edge of last bin defaults to maximum value of x
 
     Returns
     -------
@@ -603,27 +605,68 @@ def bin_1D(x, y, nx=None, min_x=None, max_x=None):
     return bins, val, count
 
 
-def pixel_to_radius(shape, calibrated_center, pixel_size=None):
+def statistics_1D(x, y, stat='mean', nx=None, min_x=None, max_x=None):
     """
-    Converts pixel positions to radius from the calibrated center
+    Bin the values in y based on their x-coordinates
 
     Parameters
     ----------
-    shape : tuple
-        The shape of the image (nrow, ncol) to warp
-        the coordinates of
-
-    calibrated_center : tuple
-        The center in pixels-units (row, col)
-
-    pixel_size : tuple, optional
-        The size of a pixel (really the pitch) in real units. (height, width).
-
-        Defaults to 1 pixel/pixel if not specified.
+    x : array
+        position
+    y : array
+        intensity
+    stat: str or func, optional
+        statistic to be used on the binned values defaults to mean
+        see scipy.stats.binned_statistic
+    nx : integer, optional
+        number of bins to use defaults to default bin value
+    min_x : float, optional
+        Left edge of first bin defaults to minimum value of x
+    max_x : float, optional
+        Right edge of last bin defaults to maximum value of x
 
     Returns
     -------
-    R : array
+    edges : array
+        edges of bins, length nx + 1
+
+    val : array
+        statistics of values in each bin, length nx
+    """
+
+    # handle default values
+    if min_x is None:
+        min_x = np.min(x)
+    if max_x is None:
+        max_x = np.max(x)
+    if nx is None:
+        nx = _defaults["bins"]
+
+    # use a weighted histogram to get the bin sum
+    bins = np.linspace(start=min_x, stop=max_x, num=nx+1, endpoint=True)
+
+    val, _, _ = scipy.stats.binned_statistic(x, y, statistic=stat, bins=bins)
+    # return the two arrays
+    return bins, val
+
+
+def radial_grid(center, shape, pixel_size=None):
+    """
+    Make a grid of radial positions.
+
+    Parameters
+    ----------
+    center : tuple
+        point in image where r=0; may be a float giving subpixel precision.
+        Order is (rr, cc).
+
+    shape: tuple
+        Image shape which is used to determine the maximum extent of output
+        pixel coordinates. Order is (rr, cc).
+
+    Returns
+    -------
+    r : array
         The L2 norm of the distance of each pixel from the calibrated center.
     """
 
@@ -631,45 +674,49 @@ def pixel_to_radius(shape, calibrated_center, pixel_size=None):
         pixel_size = (1, 1)
 
     X, Y = np.meshgrid(pixel_size[1] * (np.arange(shape[1]) -
-                                        calibrated_center[1]),
+                                        center[1]),
                        pixel_size[0] * (np.arange(shape[0]) -
-                                        calibrated_center[0]))
+                                        center[0]))
     return np.sqrt(X*X + Y*Y)
 
 
-def pixel_to_phi(shape, calibrated_center, pixel_size=None):
+def angle_grid(center, shape, pixel_size=None):
     """
-    Converts pixel positions to :math:`\\phi`, the angle from vertical.
+    Make a grid of angular positions.
+
+    Read note for our conventions here -- there be dragons!
 
     Parameters
     ----------
-    shape : tuple
-        The shape of the image (nrow, ncol) to warp
-        the coordinates of
+    center : tuple
+        point in image where r=0; may be a float giving subpixel precision.
+        Order is (rr, cc).
 
-    calibrated_center : tuple
-        The center in pixels-units (row, col)
-
-    pixel_size : tuple, optional
-        The size of a pixel (really the pitch) in real units. (height, width).
-
-        Defaults to 1 pixel/pixel if not specified.
+    shape: tuple
+        Image shape which is used to determine the maximum extent of output
+        pixel coordinates. Order is (rr, cc).
 
     Returns
     -------
-    phi : array
-        :math:`\\phi`, the angle from the vertical axis.
-        :math:`\\phi \\el [-\pi, \pi]`
+    agrid : array
+        angular position (in radians) of each array element in range [-pi, pi]
+
+    Note
+    ----
+    :math:`\\theta`, the counter-clockwise angle from the positive x axis
+    :math:`\\theta \\el [-\pi, \pi]`.  In array indexing and the conventional
+    axes for images (origin in upper left), positive y is downward.
     """
 
     if pixel_size is None:
         pixel_size = (1, 1)
 
-    X, Y = np.meshgrid(pixel_size[1] * (np.arange(shape[1]) -
-                                        calibrated_center[1]),
+    # row is y, column is x. "so say we all. amen."
+    x, y = np.meshgrid(pixel_size[1] * (np.arange(shape[1]) -
+                                        center[1]),
                        pixel_size[0] * (np.arange(shape[0]) -
-                                        calibrated_center[0]))
-    return np.arctan2(X, Y)
+                                        center[0]))
+    return np.arctan2(y, x)
 
 
 def radius_to_twotheta(dist_sample, radius):

@@ -3,10 +3,13 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal)
+from numpy.testing import (assert_equal, assert_array_equal,
+                           assert_array_almost_equal, assert_almost_equal)
 
-from skxray.cdi import _dist, gauss, convolution
+from skxray.cdi import (_dist, gauss, find_support,
+                        pi_modulus, cal_diff_error, cdi_recon,
+                        generate_random_phase_field,
+                        generate_box_support, generate_disk_support)
 
 
 def dist_temp(dims):
@@ -62,12 +65,98 @@ def test_gauss():
         assert_almost_equal(0, np.mean(d), decimal=3)
 
 
-def test_convolution():
-    shape_list = [(100, 50), (100, 100, 100)]
-    std1 = 5
-    std2 = 10
+def test_find_support():
+    shape_v = [100, 100]
+    cenv = shape_v[0]/2
+    r = 20
+    a = np.zeros(shape_v)
+    a[cenv-r:cenv+r, cenv-r:cenv+r] = 1.0
+    sw_sigma = 0.50
+    sw_threshold = 0.05
+
+    new_sup_index = find_support(a, sw_sigma, sw_threshold)
+    new_sup = np.zeros_like(a)
+    new_sup[new_sup_index] = 1
+    # the area of new support becomes larger
+    assert(np.sum(new_sup) == 1760)
+
+
+def make_synthetic_data():
+    """
+    Fft transform of a squared area.
+
+    Returns
+    -------
+    a : array
+        squared sample
+    diff_v : array
+        fft transform of sample area
+    """
+    shapev = [100, 100]
+    r = 20
+    a = np.zeros(shapev)
+    a[shapev[0]//2-r:shapev[0]//2+r, shapev[1]//2-r:shapev[1]//2+r] = 1
+    diff_v = np.abs(np.fft.fftn(a)) / np.sqrt(np.size(a))
+    return a, diff_v
+
+
+def test_pi_modulus():
+    a, diff_v = make_synthetic_data()
+    a_new = pi_modulus(a, diff_v)
+    assert_array_almost_equal(np.abs(a_new), a)
+
+
+def test_cal_diff_error():
+    a, diff_v = make_synthetic_data()
+    result = cal_diff_error(a, diff_v)
+    assert_equal(np.sum(result), 0)
+
+
+def cal_support(func):
+    def inner(*args):
+        return func(*args)
+    return inner
+
+
+def _box_support_area(sup_radius, shape_v):
+    sup = generate_box_support(sup_radius, shape_v)
+    new_sup = sup[sup != 0]
+    assert_array_equal(new_sup.shape, (2*sup_radius)**len(shape_v))
+
+
+def _disk_support_area(sup_radius, shape_v):
+    sup = generate_disk_support(sup_radius, shape_v)
+    new_sup = sup[sup != 0]
+    assert(new_sup.size < (2*sup_radius)**len(shape_v))
+
+
+def test_support():
+    sup_radius = 20
+    a, diff_v = make_synthetic_data()
+    sup = generate_box_support(sup_radius, diff_v.shape)
+
+    shape_list = [[100, 100], [100, 100, 100]]
     for v in shape_list:
-        g1 = gauss(v, std1)
-        g2 = gauss(v, std2)
-        f = convolution(g1, g2)
-        assert_almost_equal(0, np.mean(f), decimal=3)
+        yield _box_support_area, sup_radius, v
+    for v in shape_list:
+        yield _disk_support_area, sup_radius, v
+
+
+def test_recon():
+    a, diff_v = make_synthetic_data()
+    total_n = 10
+    sup_radius = 20
+
+    # inital phase and support
+    init_phase = generate_random_phase_field(diff_v)
+    sup = generate_box_support(sup_radius, diff_v.shape)
+    # run reconstruction
+    outv1, error_dict = cdi_recon(diff_v, init_phase, sup, sw_flag=False,
+                                  n_iterations=total_n, sw_step=2)
+    outv1 = np.abs(outv1)
+
+    outv2, error_dict = cdi_recon(diff_v, init_phase, sup, sw_flag=True,
+                                  n_iterations=total_n, sw_step=2)
+    outv2 = np.abs(outv2)
+    # compare the area of supports
+    assert_array_equal(outv1.shape, outv2.shape)

@@ -67,6 +67,18 @@ def test_bin_1D():
                        np.ones(nx) * 10)
 
 
+def test_statistics_1D():
+    # set up simple data
+    x = np.linspace(0, 1, 100)
+    y = np.arange(100)
+    nx = 10
+    # make call
+    edges, val = core.statistics_1D(x, y, nx=nx)
+    # check that values are as expected
+    assert_array_almost_equal(edges,
+                              np.linspace(0, 1, nx + 1, endpoint=True))
+    assert_array_almost_equal(val,
+                              np.sum(y.reshape(nx, -1), axis=1)/10.)
 def test_bin_1D_2():
     """
     Test for appropriate default value handling
@@ -536,6 +548,20 @@ def run_image_to_relative_xyi_repeatedly():
         num_calls += 1
         if num_calls % 10 == 0:
             print('{0} calls successful'.format(num_calls))
+
+def test_angle_grid():
+    a = core.angle_grid((3, 3), (7, 7))
+    assert_equal(a[3, -1], 0)
+    assert_almost_equal(a[3, 0], np.pi)
+    assert_almost_equal(a[4, 4], np.pi/4)  # (1, 1) should be 45 degrees
+    # The documented domain is [-pi, pi].
+    correct_domain = np.all((a < np.pi + 0.1) & (a > -np.pi - 0.1))
+    assert_true(correct_domain)
+
+def test_radial_grid():
+    a = core.radial_grid((3, 3), (7, 7))
+    assert_equal(a[3, 3], 0)
+    assert_equal(a[3, 4], 1)
 
 
 if __name__ == '__main__':
