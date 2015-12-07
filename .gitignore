@@ -75,4 +75,17 @@ docs/_build/
 *.DAT
 
 #generated documntation files
-doc/resource/api/generated/
+generated/
+
+#ipython notebook
+.ipynb_checkpoints/
+
+#vim
+*.swp
+
+#data files
+*.zip
+*.jpg
+
+# ctags
+.tags*

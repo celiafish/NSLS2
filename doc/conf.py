@@ -36,11 +36,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.extlinks',
               'plot_generator',
               'numpydoc',
-              'ipython_directive',
-              'ipython_console_highlighting',
+              'IPython.sphinxext.ipython_directive',
+              'IPython.sphinxext.ipython_console_highlighting',
              ]
 
-extlinks = {'issue': ('https://github.com/Nikea/scikit-xray/issues/%s',
+extlinks = {'issue': ('https://github.com/scikit-xray/scikit-xray/issues/%s',
                       'GH')}
 
 # Generate the API documentation when building

@@ -33,8 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                          #
 ########################################################################
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function
 
 import six
 import logging
@@ -43,4 +42,6 @@ logger = logging.getLogger(__name__)
 from logging import NullHandler
 logger.addHandler(NullHandler())
 
-__version__ = '0.0.x'
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
